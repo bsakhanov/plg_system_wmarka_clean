@@ -28,7 +28,13 @@ namespace Webmarka\Plugin\System\Clean\Cleaner;
 final class WordClean
 {
     /** Лишние знаки по умолчанию: через пробел; меняется в настройках плагина */
-    public const DEFAULT_EXTRA = '№ ≈ ↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
+    public const DEFAULT_EXTRA = '↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
+
+    /**
+     * Знаки, которые остаются всегда — и как эмодзи, и из списка лишних знаков: через пробел; меняется в настройках плагина.
+     * © ® ™ Unicode считает пиктограммами, а в тексте это знаки авторского права и товарных марок.
+     */
+    public const DEFAULT_KEEP = '© ® ™';
 
     /** Хосты, вставки с которых разрешены (iframe и метки tm-embed): суффикс домена, через пробел */
     public const DEFAULT_EMBED_HOSTS = 'youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app';
@@ -76,6 +82,9 @@ final class WordClean
     /** @var array{linkMode: string, siteHost: string, embedHosts: string} */
     private array $opt;
 
+    /** Знаки, которые остаются (DEFAULT_KEEP или настройка сайта) */
+    private string $keepSymbols;
+
     /** В этом тексте убирались значки: после снятия тегов подчищаются пробелы у знаков препинания */
     private bool $symbolsSeen = false;
 
@@ -94,7 +103,8 @@ final class WordClean
         array $options = []
     ) {
         // linkMode: all — все ссылки, кроме «#якорь», mailto и tel, открываются в новой вкладке; external — только внешние; off — не трогать
-        $this->opt = $options + ['linkMode' => 'all', 'siteHost' => '', 'embedHosts' => self::DEFAULT_EMBED_HOSTS];
+        $this->opt = $options + ['linkMode' => 'all', 'siteHost' => '', 'embedHosts' => self::DEFAULT_EMBED_HOSTS, 'keepSymbols' => self::DEFAULT_KEEP];
+        $this->keepSymbols = (string) $this->opt['keepSymbols'];
         $this->keep  = array_map(
             static fn (string $g): string => '~^' . str_replace('\*', '[a-z0-9_-]*', preg_quote(trim($g), '~')) . '$~i',
             array_filter(array_map('trim', $keepClasses))
@@ -111,7 +121,7 @@ final class WordClean
         }
 
         if (!str_contains($html, '<')) {
-            return $this->stripEmoji ? trim(self::stripSymbols($html, true, $this->extra, $this->hashtags)) : $html;
+            return $this->stripEmoji ? trim(self::stripSymbols($html, true, $this->extra, $this->hashtags, true, $this->keepSymbols)) : $html;
         }
 
         // 0. вставки соцсетей: iframe разрешённых хостов и виджет Telegram → безопасная метка tm-embed; остальные iframe убираются
@@ -251,6 +261,35 @@ final class WordClean
     }
 
     /**
+     * Знаки из списка «остаются» на время очистки подменяются символами частной области Unicode (U+F0000…), которых не касается ни одно правило,
+     * и потом возвращаются. Вариант эмодзи «©️» сводится к самому знаку «©».
+     *
+     * @param   array  $saved  подмены: символ частной области => знак
+     */
+    private static function protect(string $text, string $keep, array &$saved): string
+    {
+        $tokens = [];
+
+        foreach (preg_split('~\s+~u', trim($keep)) ?: [] as $t) {
+            $t = preg_replace('~[\x{FE0E}\x{FE0F}]~u', '', $t) ?? $t;
+
+            if ($t !== '' && !\in_array($t, $tokens, true)) {
+                $tokens[] = $t;
+            }
+        }
+
+        usort($tokens, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));   // длинная последовательность раньше своей части
+
+        foreach ($tokens as $i => $t) {
+            $ph   = mb_chr(0xF0000 + $i, 'UTF-8');
+            $text = preg_replace('~' . preg_quote($t, '~') . '[\x{FE0E}\x{FE0F}]?~u', $ph, $text) ?? $text;
+            $saved[$ph] = $t;
+        }
+
+        return $text;
+    }
+
+    /**
      * Строка без эмодзи и лишних значков. Пробелы вокруг убранного знака сводятся к одному; перед знаками препинания и после открывающих скобок
      * лишний пробел убирается. Строка без изменений возвращается как есть.
      *
@@ -260,14 +299,16 @@ final class WordClean
      * @param   bool    $tails     применять правило «в конце — целиком» к этой строке: верно, когда строка — весь абзац (заголовок, описание); для узла текста
      *                             внутри абзаца решает проход по блокам (hashtagTails), узел не знает, что стоит рядом
      */
-    public static function stripSymbols(string $text, bool $emoji = true, string $extra = self::DEFAULT_EXTRA, bool $hashtags = true, bool $tails = true): string
+    public static function stripSymbols(string $text, bool $emoji = true, string $extra = self::DEFAULT_EXTRA, bool $hashtags = true, bool $tails = true, string $keep = self::DEFAULT_KEEP): string
     {
         if (!$emoji) {
             return $text;
         }
 
-        $orig = $text;
-        $text = preg_replace(self::emojiRegex(), '', $text) ?? $text;
+        $orig  = $text;
+        $saved = [];
+        $text  = self::protect($text, $keep, $saved);
+        $text  = preg_replace(self::emojiRegex(), '', $text) ?? $text;
         $text = preg_replace('~[\x{FE0E}\x{FE0F}\x{200D}\x{20E3}\x{E0020}-\x{E007F}]~u', '', $text) ?? $text;   // селекторы, оставшиеся без эмодзи
 
         $tokens = array_values(array_filter(preg_split('~\s+~u', trim($extra)) ?: [], static fn ($t) => $t !== ''));
@@ -290,6 +331,10 @@ final class WordClean
             $text = preg_replace('~(?<![\p{L}\p{N}_&/])#(?=[\p{L}\p{N}_])~u', '', $text) ?? $text;
         }
 
+        if ($saved) {
+            $text = strtr($text, $saved);
+        }
+
         if ($text === $orig) {
             return $text;
         }
@@ -306,7 +351,7 @@ final class WordClean
     {
         foreach (iterator_to_array($xp->query('.//text()', $root)) as $t) {
             $v = (string) $t->nodeValue;
-            $n = self::stripSymbols($v, true, $this->extra, false);   // хештеги — отдельным проходом по блокам (hashtagTails, hashtagMarks)
+            $n = self::stripSymbols($v, true, $this->extra, false, true, $this->keepSymbols);   // хештеги — отдельным проходом по блокам (hashtagTails, hashtagMarks)
 
             if ($n === $v) {
                 continue;
@@ -1019,7 +1064,7 @@ final class WordClean
                 $val = trim((string) $el->getAttribute($name));
 
                 if ($this->stripEmoji && \in_array($lower, ['alt', 'title'], true) && $val !== '') {
-                    $el->setAttribute($name, trim(self::stripSymbols($val, true, $this->extra, false)));
+                    $el->setAttribute($name, trim(self::stripSymbols($val, true, $this->extra, false, true, $this->keepSymbols)));
                     $val = trim((string) $el->getAttribute($name));
                 }
 

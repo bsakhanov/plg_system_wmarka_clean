@@ -6,7 +6,7 @@
 	<copyright>(C) 2026 Beibit Sakhanov</copyright>
 	<license>GNU General Public License version 2 or later</license>
 	<authorUrl>https://webmarka.kz</authorUrl>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<description>PLG_SYSTEM_WMARKA_CLEAN_XML_DESCRIPTION</description>
 	<namespace path="src">Webmarka\Plugin\System\Clean</namespace>
 	<scriptfile>script.php</scriptfile>
@@ -41,7 +41,8 @@
 					<option value="0">JNO</option>
 					<option value="1">JYES</option>
 				</field>
-				<field name="extra_symbols" type="textarea" rows="2" default="№ ≈ ↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘" label="PLG_SYSTEM_WMARKA_CLEAN_EXTRA" description="PLG_SYSTEM_WMARKA_CLEAN_EXTRA_DESC"/>
+				<field name="extra_symbols" type="textarea" rows="2" default="↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘" label="PLG_SYSTEM_WMARKA_CLEAN_EXTRA" description="PLG_SYSTEM_WMARKA_CLEAN_EXTRA_DESC"/>
+				<field name="keep_symbols" type="textarea" rows="2" default="© ® ™" label="PLG_SYSTEM_WMARKA_CLEAN_KEEP_SYMBOLS" description="PLG_SYSTEM_WMARKA_CLEAN_KEEP_SYMBOLS_DESC"/>
 				<field name="strip_hashtags" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_HASHTAGS" description="PLG_SYSTEM_WMARKA_CLEAN_HASHTAGS_DESC">
 					<option value="0">JNO</option>
 					<option value="1">JYES</option>

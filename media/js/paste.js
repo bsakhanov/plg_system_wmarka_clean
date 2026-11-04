@@ -21,7 +21,12 @@
   const embedHosts = String(options.embedHosts || 'youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app')
     .toLowerCase().split(/[\s,]+/).filter(Boolean);
   const SOCIAL = ['twitter-tweet', 'instagram-media', 'tiktok-embed', 'text-post-media', 'bluesky-embed'];
-  const extraSymbols = typeof options.extra === 'string' ? options.extra : '№ ≈ ↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
+  const extraSymbols = typeof options.extra === 'string' ? options.extra : '↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
+  /** Знаки, которые остаются (как WordClean::protect): на время очистки — символ частной области Unicode, потом обратно; «©️» → «©» */
+  const KEEP = (typeof options.keepSymbols === 'string' ? options.keepSymbols : '© ® ™')
+    .split(/\s+/).map((t) => t.replace(/[\uFE0E\uFE0F]/g, '')).filter((t, i, a) => t && a.indexOf(t) === i)
+    .sort((a, b) => [...b].length - [...a].length)
+    .map((t, i) => [new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\uFE0E\\uFE0F]?', 'gu'), String.fromCodePoint(0xF0000 + i), t]);
 
   const UNWRAP = new Set(['SPAN', 'FONT', 'CENTER', 'BIG', 'TT', 'NOBR', 'BDO', 'U', 'TG-EMOJI', 'TG-SPOILER']);
   const BLOCK = new Set(['P', 'DIV', 'UL', 'OL', 'LI', 'TABLE', 'BLOCKQUOTE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HR', 'PRE', 'FIGURE', 'SECTION', 'ARTICLE', 'ASIDE', 'DL']);
@@ -72,6 +77,7 @@
       return text;
     }
     const orig = text;
+    KEEP.forEach(([re, ph]) => { text = text.replace(re, ph); });
     text = text.replace(EMOJI_RE, '').replace(/[\uFE0E\uFE0F\u200D\u20E3\u{E0020}-\u{E007F}]/gu, '');
     if (EXTRA_RE) {
       text = text.replace(EXTRA_RE, '');
@@ -83,6 +89,7 @@
     if (withMarks && stripHashtags && MARK_RE) {
       text = text.replace(MARK_RE, '');
     }
+    KEEP.forEach(([, ph, t]) => { text = text.split(ph).join(t); });
     if (text === orig) {
       return text;
     }

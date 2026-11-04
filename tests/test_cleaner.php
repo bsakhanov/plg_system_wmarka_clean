@@ -39,6 +39,16 @@ foreach ($cases as [$name, $in, $exp]) {
 }
 $check('заголовок без эмодзи', WordClean::stripSymbols('🔥 Курс тенге укрепился ✅', true, WordClean::DEFAULT_EXTRA, true), ['has' => ['Курс тенге укрепился'], 'not' => ['🔥', '✅']]);
 
+$keepAll = '₸ ₽ $ € £ ¥ ₴ ₼ ₾ ₺ ₹ ⃀ № § ° ± × ≈ ‰ ½ ² © ® ™';
+$check('знаки: валюты, №, §, меры, © ® ™ остаются; ☎, эмодзи и ★ уходят', WordClean::stripSymbols($keepAll . ' ☎ 🔥 ★', true, WordClean::DEFAULT_EXTRA, false, false), ['has' => explode(' ', $keepAll), 'not' => ['☎', '🔥', '★']]);
+$check('знаки: «©️» становится «©»', WordClean::stripSymbols('Фото ©️ ТАСС', true, WordClean::DEFAULT_EXTRA, false, false), ['has' => ['Фото © ТАСС'], 'not' => ["\u{FE0F}"]]);
+$check('знаки: свой список «остаются» — ☎ ✉ ★', WordClean::stripSymbols('☎ +7 701 000 00 00, ✉ info@site.kz, оценка ★★★★ 🔥', true, WordClean::DEFAULT_EXTRA, false, false, '☎ ✉ ★'), ['has' => ['☎ +7', '✉ info', '★★★★'], 'not' => ['🔥']]);
+$check('знаки: явный список лишних (как у The Tenge) убирает № и ≈, © остаётся', WordClean::stripSymbols('Приказ № 15: рост ≈ 5 %, © ТАСС', true, '№ ≈ ↑', false, false), ['has' => ['Приказ 15', '© ТАСС'], 'not' => ['№', '≈']]);
+$check('знаки: пустой список «остаются» — © уходит', WordClean::stripSymbols('© ТАСС', true, WordClean::DEFAULT_EXTRA, false, false, ''), ['not' => ['©']]);
+$check('знаки: «остаются» сильнее «лишних»', WordClean::stripSymbols('Оценка ★★★', true, '★', false, false, '★'), ['has' => ['★★★']]);
+$c2 = new WordClean(['uk-table*'], true, true, WordClean::DEFAULT_EXTRA, true, ['keepSymbols' => '☎']);
+$check('знаки: настройка доходит до очистки текста', $c2->clean('<p>☎ 8 800 000 00 00 🔥</p>'), ['has' => ['☎ 8 800'], 'not' => ['🔥']]);
+
 [$html] = Renderer::render($c->clean('<iframe width="560" height="315" src="https://www.youtube.com/embed/abc123"></iframe>'), WordClean::DEFAULT_EMBED_HOSTS);
 $check('сайт: метка YouTube → iframe', $html, ['has' => ['<iframe src="https://www.youtube.com/embed/abc123"', 'aspect-ratio:560 / 315', 'loading="lazy"'], 'not' => ['tm-embed']]);
 [$html] = Renderer::render($c->clean('<script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="durov/123"></script>'), WordClean::DEFAULT_EMBED_HOSTS);

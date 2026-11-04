@@ -18,6 +18,10 @@ use Joomla\Database\DatabaseInterface;
  */
 class PlgSystemWmarka_cleanInstallerScript
 {
+    /** The «extra symbols» default of 1.0.0 and the one since 1.0.1 (№ and ≈ are no longer removed by default). */
+    private const OLD_EXTRA = '№ ≈ ↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
+    private const NEW_EXTRA = '↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
+
     private const KEYS = ['merge_readmore', 'enabled_save', 'enabled_paste', 'strip_emoji', 'extra_symbols', 'strip_hashtags',
         'link_target', 'embed_hosts', 'keep_classes', 'drop_empty_p', 'table_classes'];
 
@@ -34,7 +38,7 @@ class PlgSystemWmarka_cleanInstallerScript
 
     public function postflight($type, $parent): void
     {
-        if ($type !== 'install') {
+        if ($type !== 'install' && $type !== 'update') {
             return;
         }
 
@@ -53,6 +57,21 @@ class PlgSystemWmarka_cleanInstallerScript
         $self = $find('wmarka_clean');
 
         if (!$self) {
+            return;
+        }
+
+        if ($type === 'update') {
+            // The 1.0.0 default saved on install moves to the new default; a list someone changed, or one carried over from tengeclean, stays.
+            $params = json_decode((string) $self->params, true) ?: [];
+
+            if (($params['extra_symbols'] ?? null) === self::OLD_EXTRA && !$find('tengeclean')) {
+                $params['extra_symbols'] = self::NEW_EXTRA;
+                $json = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $db->setQuery($db->createQuery()->update($db->quoteName('#__extensions'))
+                    ->set($db->quoteName('params') . ' = ' . $db->quote($json))
+                    ->where($db->quoteName('extension_id') . ' = ' . (int) $self->extension_id))->execute();
+            }
+
             return;
         }
 

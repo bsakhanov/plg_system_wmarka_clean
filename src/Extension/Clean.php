@@ -64,7 +64,8 @@ final class Clean extends CMSPlugin implements SubscriberInterface
         }
 
         $emoji   = (int) $this->params->get('strip_emoji', 1) === 1;
-        $extra   = (string) $this->params->get('extra_symbols', WordClean::DEFAULT_EXTRA);
+        $extra   = $this->text('extra_symbols', WordClean::DEFAULT_EXTRA);
+        $keep    = $this->text('keep_symbols', WordClean::DEFAULT_KEEP);
         $tags    = (int) $this->params->get('strip_hashtags', 1) === 1;
         $cleaner = new WordClean($this->keep(), (int) $this->params->get('drop_empty_p', 1) === 1, $emoji, $extra, $tags, $this->cleanerOptions());
 
@@ -72,7 +73,7 @@ final class Clean extends CMSPlugin implements SubscriberInterface
         if ($emoji) {
             foreach (['title', 'metadesc'] as $field) {
                 if (isset($item->$field) && \is_string($item->$field) && $item->$field !== '') {
-                    $clean = trim(WordClean::stripSymbols($item->$field, true, $extra, $tags));
+                    $clean = trim(WordClean::stripSymbols($item->$field, true, $extra, $tags, true, $keep));
 
                     if ($clean !== '' || $field === 'metadesc') {
                         $item->$field = $clean;
@@ -124,7 +125,7 @@ final class Clean extends CMSPlugin implements SubscriberInterface
         }
 
         $doc = $app->getDocument();
-        $doc->addScriptOptions('wmarka_clean', ['keep' => $this->keep(), 'tables' => $tables, 'dropEmpty' => (int) $this->params->get('drop_empty_p', 1) === 1, 'emoji' => (int) $this->params->get('strip_emoji', 1) === 1, 'extra' => (string) $this->params->get('extra_symbols', WordClean::DEFAULT_EXTRA), 'hashtags' => (int) $this->params->get('strip_hashtags', 1) === 1] + $this->cleanerOptions());
+        $doc->addScriptOptions('wmarka_clean', ['keep' => $this->keep(), 'tables' => $tables, 'dropEmpty' => (int) $this->params->get('drop_empty_p', 1) === 1, 'emoji' => (int) $this->params->get('strip_emoji', 1) === 1, 'extra' => $this->text('extra_symbols', WordClean::DEFAULT_EXTRA), 'hashtags' => (int) $this->params->get('strip_hashtags', 1) === 1] + $this->cleanerOptions());
         $doc->getWebAssetManager()->registerAndUseScript('plg_system_wmarka_clean.paste', 'plg_system_wmarka_clean/paste.js', [], ['defer' => true]);
     }
 
@@ -169,10 +170,19 @@ final class Clean extends CMSPlugin implements SubscriberInterface
             'linkMode'   => \in_array($mode, ['all', 'external', 'off'], true) ? $mode : 'external',
             'siteHost'   => (string) Uri::getInstance()->getHost(),
             'embedHosts' => trim((string) $this->params->get('embed_hosts', '')) ?: WordClean::DEFAULT_EMBED_HOSTS,
+            'keepSymbols' => $this->text('keep_symbols', WordClean::DEFAULT_KEEP),
         ];
     }
 
     /** @return string[] */
+    /** A text setting as saved: an emptied field stays empty (Registry::get would give the default back). */
+    private function text(string $key, string $default): string
+    {
+        $all = $this->params->toArray();
+
+        return \array_key_exists($key, $all) ? (string) $all[$key] : $default;
+    }
+
     private function keep(): array
     {
         $list = array_values(array_filter(array_map('trim', preg_split('~\R~u', (string) $this->params->get('keep_classes', "uk-table*\nuk-overflow-auto")) ?: [])));

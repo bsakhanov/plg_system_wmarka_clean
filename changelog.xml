@@ -3,6 +3,18 @@
     <changelog>
         <element>wmarka_clean</element>
         <type>plugin</type>
+        <version>1.0.1</version>
+        <addition>
+            <item>«Symbols to keep»: symbols never removed as emoji or extra symbols; © ® ™ by default, extendable per site (☎ ✉ ★ …).</item>
+        </addition>
+        <change>
+            <item>№ and ≈ are no longer removed by default; an untouched 1.0.0 list moves to the new default on update.</item>
+            <item>An emptied «Extra symbols» field means «emoji only» instead of falling back to the default.</item>
+        </change>
+    </changelog>
+    <changelog>
+        <element>wmarka_clean</element>
+        <type>plugin</type>
         <version>1.0.0</version>
         <addition>
             <item>Cleans article text on paste and on save: Word, Google Docs, LibreOffice and Telegram clutter, emoji, hashtags; keeps links, anchors, footnotes and allowed classes.</item>
