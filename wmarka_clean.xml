@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+	<name>plg_system_wmarka_clean</name>
+	<author>Beibit Sakhanov</author>
+	<creationDate>2026-11</creationDate>
+	<copyright>(C) 2026 Beibit Sakhanov</copyright>
+	<license>GNU General Public License version 2 or later</license>
+	<authorUrl>https://webmarka.kz</authorUrl>
+	<version>1.0.0</version>
+	<description>PLG_SYSTEM_WMARKA_CLEAN_XML_DESCRIPTION</description>
+	<namespace path="src">Webmarka\Plugin\System\Clean</namespace>
+	<scriptfile>script.php</scriptfile>
+	<files>
+		<folder plugin="wmarka_clean">services</folder>
+		<folder>src</folder>
+		<folder>language</folder>
+	</files>
+	<media destination="plg_system_wmarka_clean" folder="media">
+		<folder>js</folder>
+	</media>
+	<changelogurl>https://raw.githubusercontent.com/bsakhanov/plg_system_wmarka_clean/main/changelog.xml</changelogurl>
+	<updateservers>
+		<server type="extension" priority="1" name="Webmarka Clean">https://raw.githubusercontent.com/bsakhanov/plg_system_wmarka_clean/main/updates.xml</server>
+	</updateservers>
+	<config>
+		<fields name="params">
+			<fieldset name="basic">
+				<field name="merge_readmore" type="radio" layout="joomla.form.field.radio.switcher" default="0" label="PLG_SYSTEM_WMARKA_CLEAN_MERGE_READMORE" description="PLG_SYSTEM_WMARKA_CLEAN_MERGE_READMORE_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="enabled_save" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_SAVE" description="PLG_SYSTEM_WMARKA_CLEAN_SAVE_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="enabled_paste" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_PASTE" description="PLG_SYSTEM_WMARKA_CLEAN_PASTE_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="strip_emoji" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_EMOJI" description="PLG_SYSTEM_WMARKA_CLEAN_EMOJI_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="extra_symbols" type="textarea" rows="2" default="№ ≈ ↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘" label="PLG_SYSTEM_WMARKA_CLEAN_EXTRA" description="PLG_SYSTEM_WMARKA_CLEAN_EXTRA_DESC"/>
+				<field name="strip_hashtags" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_HASHTAGS" description="PLG_SYSTEM_WMARKA_CLEAN_HASHTAGS_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="link_target" type="list" default="external" label="PLG_SYSTEM_WMARKA_CLEAN_LINKS" description="PLG_SYSTEM_WMARKA_CLEAN_LINKS_DESC">
+					<option value="all">PLG_SYSTEM_WMARKA_CLEAN_LINKS_ALL</option>
+					<option value="external">PLG_SYSTEM_WMARKA_CLEAN_LINKS_EXTERNAL</option>
+					<option value="off">PLG_SYSTEM_WMARKA_CLEAN_LINKS_OFF</option>
+				</field>
+				<field name="embed_hosts" type="textarea" rows="4" default="youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app" label="PLG_SYSTEM_WMARKA_CLEAN_HOSTS" description="PLG_SYSTEM_WMARKA_CLEAN_HOSTS_DESC"/>
+				<field name="render_embeds" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_RENDER" description="PLG_SYSTEM_WMARKA_CLEAN_RENDER_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="keep_classes" type="textarea" rows="4" default="uk-table*&#10;uk-overflow-auto" label="PLG_SYSTEM_WMARKA_CLEAN_KEEP" description="PLG_SYSTEM_WMARKA_CLEAN_KEEP_DESC"/>
+				<field name="drop_empty_p" type="radio" layout="joomla.form.field.radio.switcher" default="1" label="PLG_SYSTEM_WMARKA_CLEAN_EMPTY" description="PLG_SYSTEM_WMARKA_CLEAN_EMPTY_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="table_classes" type="textarea" rows="6" default="Без оформления|&#10;Таблица|uk-table&#10;Таблица с полосами|uk-table uk-table-striped&#10;Таблица с линиями|uk-table uk-table-divider&#10;Компактная таблица|uk-table uk-table-small uk-table-divider" label="PLG_SYSTEM_WMARKA_CLEAN_TABLES" description="PLG_SYSTEM_WMARKA_CLEAN_TABLES_DESC"/>
+			</fieldset>
+		</fields>
+	</config>
+</extension>

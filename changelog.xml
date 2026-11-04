@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<changelogs>
+    <changelog>
+        <element>wmarka_clean</element>
+        <type>plugin</type>
+        <version>1.0.0</version>
+        <addition>
+            <item>Cleans article text on paste and on save: Word, Google Docs, LibreOffice and Telegram clutter, emoji, hashtags; keeps links, anchors, footnotes and allowed classes.</item>
+            <item>Video and social embeds are stored as safe markers and built into lazy-loaded iframes on the site by the plugin itself.</item>
+            <item>Kazakh language; settings of «The Tenge: text cleaning» are carried over on install.</item>
+        </addition>
+    </changelog>
+</changelogs>
