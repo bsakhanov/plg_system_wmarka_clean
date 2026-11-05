@@ -6,7 +6,7 @@
 	<copyright>(C) 2026 Beibit Sakhanov</copyright>
 	<license>GNU General Public License version 2 or later</license>
 	<authorUrl>https://webmarka.kz</authorUrl>
-	<version>1.0.1</version>
+	<version>1.1.0</version>
 	<description>PLG_SYSTEM_WMARKA_CLEAN_XML_DESCRIPTION</description>
 	<namespace path="src">Webmarka\Plugin\System\Clean</namespace>
 	<scriptfile>script.php</scriptfile>

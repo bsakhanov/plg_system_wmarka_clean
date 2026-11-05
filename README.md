@@ -34,6 +34,7 @@ In the editor right after pasting — exactly what is saved:
 - **Emoji, symbols and hashtags** — from the text, title and meta description. Currency signs (₸ ₽ $ € £ ¥ and others), №, §, the degree sign, ± × ≈ ‰, fractions, © ® ™, the minus before a number, list markers and a single footnote «*» stay. Each site extends the «Symbols to keep» list itself — for example ☎ and ✉ for contacts or ★ for ratings.
 - **Links.** Anchors and footnotes are kept; external links can open in a new tab.
 - **Embeds.** Iframes of allowed hosts (YouTube, Vimeo, VK, Rutube, TikTok, Instagram, Facebook, Telegram, X, Spotify and others) and the Telegram post widget become markers; iframes of other hosts are removed. On the site a marker becomes a responsive, lazy-loaded iframe, and social quotes get their platform script — only on pages that have such a quote.
+- **Wmarka Media markup.** A photo inserted from the Wmarka Media photo library (`figure.wm-figure` with the credit in `span.wm-figure__credit`), a video from its «Video» button (`figure.wm-figure--video` with the video address in `data-wm-video` and its title in `data-wm-title`) and a document link from its file library (`a.wm-doc wm-doc--pdf`) keep their classes and data whatever classes the settings allow; the same classes and `data-wm-*` on other elements are removed as usual.
 
 The same rules run twice: in the browser on paste, so what you see is what is saved, and on the server on save — so they also cover text inserted through «Code», imports, and edits through the API and assistants such as Webmarka MCP.
 

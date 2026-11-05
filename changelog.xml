@@ -3,6 +3,14 @@
     <changelog>
         <element>wmarka_clean</element>
         <type>plugin</type>
+        <version>1.1.0</version>
+        <fix>
+            <item>Wmarka Media markup survives cleaning on paste and on save: photos from its library (figure.wm-figure with the credit span), videos from its «Video» button (data-wm-video, data-wm-title) and document links from its file library (a.wm-doc) keep their classes and data whatever classes the settings allow.</item>
+        </fix>
+    </changelog>
+    <changelog>
+        <element>wmarka_clean</element>
+        <type>plugin</type>
         <version>1.0.1</version>
         <addition>
             <item>«Symbols to keep»: symbols never removed as emoji or extra symbols; © ® ™ by default, extendable per site (☎ ✉ ★ …).</item>

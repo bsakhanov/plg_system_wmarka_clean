@@ -21,6 +21,8 @@
   const embedHosts = String(options.embedHosts || 'youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app')
     .toLowerCase().split(/[\s,]+/).filter(Boolean);
   const SOCIAL = ['twitter-tweet', 'instagram-media', 'tiktok-embed', 'text-post-media', 'bluesky-embed'];
+  // снимок, видео и документ из Wmarka Media: figure.wm-figure…, подпись span.wm-figure__credit, адрес ролика data-wm-video, a.wm-doc
+  const WMARKA = /^wm-(?:figure|doc)(?:--[a-z0-9]+|__[a-z]+)?$/;
   const extraSymbols = typeof options.extra === 'string' ? options.extra : '↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
   /** Знаки, которые остаются (как WordClean::protect): на время очистки — символ частной области Unicode, потом обратно; «©️» → «©» */
   const KEEP = (typeof options.keepSymbols === 'string' ? options.keepSymbols : '© ® ™')
@@ -806,15 +808,19 @@
       const cls0 = (el.getAttribute('class') || '').split(/\s+/);
       const social = tag === 'BLOCKQUOTE' && cls0.some((c) => SOCIAL.includes(c));
       const embed = tag === 'DIV' && cls0.includes('tm-embed');
+      const wmarka = (tag === 'FIGURE' || tag === 'SPAN' || tag === 'A') && cls0.some((c) => WMARKA.test(c));
       for (const a of Array.from(el.attributes)) {
         const n = a.name.toLowerCase();
         const v = (a.value || '').trim();
+        if (wmarka && tag === 'FIGURE' && (n === 'data-wm-video' || n === 'data-wm-title')) {
+          continue;
+        }
         // вставка соцсети (blockquote твита, Instagram, TikTok, Threads, Bluesky) и метка tm-embed несут данные в data-*: они остаются
         if ((social && (n.startsWith('data-') || n === 'cite')) || (embed && n.startsWith('data-embed-'))) {
           continue;
         }
         if (n === 'class') {
-          const kept = v.split(/\s+/).filter((c) => c && (classAllowed(c) || (social && SOCIAL.includes(c)) || (embed && c === 'tm-embed')));
+          const kept = v.split(/\s+/).filter((c) => c && (classAllowed(c) || (social && SOCIAL.includes(c)) || (embed && c === 'tm-embed') || (wmarka && WMARKA.test(c))));
           kept.length ? el.setAttribute('class', kept.join(' ')) : el.removeAttribute(a.name);
         } else if (n === 'id') {
           if (!v || JUNK_ID.test(v) || (WORD_ID.test(v) && !targets.has(v))) {
@@ -837,7 +843,7 @@
         el = rename(el, tag === 'B' ? 'strong' : 'em');
         tag = el.nodeName;
       }
-      if (UNWRAP.has(tag)) {
+      if (UNWRAP.has(tag) && !(tag === 'SPAN' && el.classList.contains('wm-figure__credit'))) {
         unwrap(el);
         return;
       }

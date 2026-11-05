@@ -33,9 +33,22 @@ $cases = [
     ['стиль для письма справа налево — не курсив', '<p><span style="mso-bidi-font-style:italic">Прямой текст</span></p>', ['not' => ['<em>', '<i>']]],
     ['Google Docs: обёртка не жирная, жирное внутри — жирное', '<b style="font-weight:normal;" id="docs-internal-guid-1"><p><span style="font-weight:700">Жирный</span><span style="font-weight:400"> обычный</span></p></b>', ['has' => ['<strong>Жирный</strong>'], 'not' => ['<strong> обычный', '<b']]],
     ['строки через br становятся абзацами', '<p>Строка один<br>Строка два</p>', ['count' => ['<p>', 2]]],
+    ['Wmarka Media: снимок — класс wm-figure и подпись span.wm-figure__credit на месте', '<figure class="wm-figure"><img src="images/2026/11/05/x.webp" alt="Здание" width="1200" height="800"><figcaption>Подпись. <span class="wm-figure__credit">Фото: пресс-служба</span></figcaption></figure>',
+        ['has' => ['<figure class="wm-figure">', '<span class="wm-figure__credit">Фото: пресс-служба</span>']]],
+    ['Wmarka Media: видео — классы, адрес ролика и название на месте, чужое снято', '<figure class="wm-figure wm-figure--video foo" data-wm-video="https://youtu.be/dQw4w9WgXcQ?t=42" data-wm-title="Брифинг" data-x="1" style="color:red"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"><img src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" alt="Брифинг"></a><figcaption>Подпись. <span class="wm-figure__credit">Видео: канал</span></figcaption></figure>',
+        ['has' => ['<figure class="wm-figure wm-figure--video" data-wm-video="https://youtu.be/dQw4w9WgXcQ?t=42" data-wm-title="Брифинг">'], 'not' => ['data-x', 'style=', 'foo']]],
+    ['Wmarka Media: data-wm-* и wm-figure у других элементов снимаются', '<p class="wm-figure" data-wm-video="x">т</p>', ['not' => ['data-wm-video', 'wm-figure']]],
+    ['Wmarka Media: ссылка на документ — wm-doc и wm-doc--pdf на месте, чужой класс снят', '<p>См. <a href="/files/2026/11/05/otchet.pdf" class="wm-doc wm-doc--pdf foo">Годовой отчёт</a>&nbsp;(PDF, 2,4&nbsp;МБ)</p>',
+        ['has' => ['class="wm-doc wm-doc--pdf"'], 'not' => ['foo']]],
+    ['Wmarka Media: обычный span по-прежнему разворачивается', '<p><span class="x">т</span></p>', ['not' => ['<span']]],
 ];
 foreach ($cases as [$name, $in, $exp]) {
     $check($name, $c->clean($in), $exp);
+}
+foreach (['<figure class="wm-figure wm-figure--video" data-wm-video="https://youtu.be/abc" data-wm-title="Ролик"><a href="https://youtu.be/abc"><img src="https://i.ytimg.com/vi/abc/hqdefault.jpg" alt="Ролик"></a><figcaption>Подпись. <span class="wm-figure__credit">Видео: канал</span></figcaption></figure>',
+    '<p>См. <a href="/files/x.pdf" class="wm-doc wm-doc--pdf">Отчёт</a> (PDF)</p>'] as $i => $wm) {
+    $once = $c->clean($wm);
+    $check('Wmarka Media: повторная очистка ничего не меняет (' . ($i + 1) . ')', $c->clean($once) === $once ? 'ok' : $once, ['has' => ['ok']]);
 }
 $check('заголовок без эмодзи', WordClean::stripSymbols('🔥 Курс тенге укрепился ✅', true, WordClean::DEFAULT_EXTRA, true), ['has' => ['Курс тенге укрепился'], 'not' => ['🔥', '✅']]);
 

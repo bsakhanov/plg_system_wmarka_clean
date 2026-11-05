@@ -42,6 +42,13 @@ final class WordClean
     /** Классы вставок соцсетей: blockquote с такими классами остаётся вместе с data-* и cite (картинку из него рисует скрипт соцсети, его подключает шаблон) */
     public const SOCIAL_CLASSES = ['twitter-tweet', 'instagram-media', 'tiktok-embed', 'text-post-media', 'bluesky-embed'];
 
+    /**
+     * Разметка Wmarka Media: снимок из фототеки (figure.wm-figure, подпись span.wm-figure__credit), видео кнопки «Видео»
+     * (figure.wm-figure--video с адресом ролика в data-wm-video и названием в data-wm-title — по ним сайт рисует плеер)
+     * и ссылка на документ из Файлотеки (a.wm-doc.wm-doc--pdf — значок типа). Она остаётся, какие бы классы ни разрешала настройка.
+     */
+    public const WMARKA_CLASS = '~^wm-(?:figure|doc)(?:--[a-z0-9]+|__[a-z]+)?$~';
+
     /** Знаки-маркеры списков, кроме эмодзи (они маркеры тоже) и тире с пробелом: набранные вручную «списки» становятся ul/li */
     private const LIST_CHARS = '•●◉⬤◦‣○◌▪▫■□·∙▸▹►';
 
@@ -890,7 +897,8 @@ final class WordClean
             $tag = $el->nodeName;
         }
 
-        if (\in_array($tag, self::UNWRAP, true)) {
+        // подпись «Фото: …» / «Видео: …» снимка из Wmarka Media — span с классом, его не разворачивать
+        if (\in_array($tag, self::UNWRAP, true) && !($tag === 'span' && preg_match('~(?:^|\s)wm-figure__credit(?:\s|$)~', (string) $el->getAttribute('class')))) {
             $this->unwrap($el);
 
             return;
@@ -1021,9 +1029,15 @@ final class WordClean
         $classes = preg_split('~\s+~', trim((string) $el->getAttribute('class'))) ?: [];
         $social  = $tag === 'blockquote' && array_intersect($classes, self::SOCIAL_CLASSES) !== [];
         $embed   = $tag === 'div' && \in_array('tm-embed', $classes, true);
+        $wmarka  = \in_array($tag, ['figure', 'span', 'a'], true) && preg_grep(self::WMARKA_CLASS, $classes) !== [];
 
         foreach ($names as $name) {
             $lower = strtolower($name);
+
+            // снимок и видео из Wmarka Media: адрес ролика и его название остаются
+            if ($wmarka && $tag === 'figure' && \in_array($lower, ['data-wm-video', 'data-wm-title'], true)) {
+                continue;
+            }
 
             // вставка соцсети (blockquote твита, Instagram, TikTok, Threads, Bluesky) и метка tm-embed несут данные в data-*: они остаются
             if (($social && (str_starts_with($lower, 'data-') || $lower === 'cite')) || ($embed && str_starts_with($lower, 'data-embed-'))) {
@@ -1034,6 +1048,7 @@ final class WordClean
                 $kept = array_values(array_filter(
                     preg_split('~\s+~', trim((string) $el->getAttribute($name))) ?: [],
                     fn (string $c): bool => $this->classAllowed($c) || ($social && \in_array($c, self::SOCIAL_CLASSES, true)) || ($embed && $c === 'tm-embed')
+                        || ($wmarka && preg_match(self::WMARKA_CLASS, $c) === 1)
                 ));
 
                 if ($kept) {
