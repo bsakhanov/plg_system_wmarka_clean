@@ -3,6 +3,16 @@
     <changelog>
         <element>wmarka_clean</element>
         <type>plugin</type>
+        <version>1.2.0</version>
+        <addition>
+            <item>Диаграммы Datawrapper, Flourish и Infogram во вставках: во всю ширину текста, своей высоты.</item>
+            <item>Flourish и Infogram без фрейма (блок и сценарий площадки) тоже становятся вставкой.</item>
+            <item>Обновление добавляет площадки диаграмм к списку, где стоят все прежние площадки по умолчанию.</item>
+        </addition>
+    </changelog>
+    <changelog>
+        <element>wmarka_clean</element>
+        <type>plugin</type>
         <version>1.1.0</version>
         <fix>
             <item>Wmarka Media markup survives cleaning on paste and on save: photos from its library (figure.wm-figure with the credit span), videos from its «Video» button (data-wm-video, data-wm-title) and document links from its file library (a.wm-doc) keep their classes and data whatever classes the settings allow.</item>

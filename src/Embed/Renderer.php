@@ -53,6 +53,13 @@ final class Renderer
                             . '" style="width:100%;max-width:560px;border:0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>';
                     }
 
+                    // ширина не задана, высота задана — диаграмма (Datawrapper, Flourish, Infogram): во всю ширину текста, своей высоты
+                    if ($w === 0 && $h > 0) {
+                        return '<div class="wmarka-embed wmarka-embed--chart" style="width:100%;height:' . $h . 'px">'
+                            . '<iframe src="' . $url . '" title="' . $title . '" style="width:100%;height:100%;border:0" loading="lazy" scrolling="no"'
+                            . ' referrerpolicy="strict-origin-when-cross-origin"></iframe></div>';
+                    }
+
                     $ratio = $w > 0 && $h > 0 ? $w . ' / ' . $h : '16 / 9';
 
                     return '<div class="wmarka-embed" style="width:100%;max-width:' . ($w > 0 ? $w . 'px' : '100%') . ';aspect-ratio:' . $ratio . '">'

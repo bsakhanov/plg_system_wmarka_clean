@@ -72,5 +72,21 @@ $check('сайт: метка чужого хоста остаётся ссылк
 [, $scripts] = Renderer::render('<blockquote class="twitter-tweet"><a href="https://x.com/a/status/1">пост</a></blockquote>', WordClean::DEFAULT_EMBED_HOSTS);
 $check('сайт: цитата X получает скрипт площадки', implode(' ', $scripts), ['has' => ['platform.twitter.com/widgets.js']]);
 
+// 1.2.0: диаграммы Datawrapper, Flourish, Infogram
+$dw = '<iframe title="Инфляция" aria-label="Линии" id="datawrapper-chart-AbCdE" src="https://datawrapper.dwcdn.net/AbCdE/1/" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="420" data-external="1"></iframe><script type="text/javascript">!function(){window.addEventListener("message",function(a){})}();</script>';
+$check('Datawrapper → метка, высота из атрибута, без сценария', $c->clean($dw), ['has' => ['tm-embed', 'datawrapper.dwcdn.net/AbCdE/1/', 'data-embed-h="420"'], 'not' => ['<iframe', '<script', 'data-embed-w']]);
+[$html] = Renderer::render($c->clean($dw), WordClean::DEFAULT_EMBED_HOSTS);
+$check('сайт: Datawrapper → во всю ширину, своей высоты', $html, ['has' => ['wmarka-embed--chart', 'height:420px', '<iframe src="https://datawrapper.dwcdn.net/AbCdE/1/"'], 'not' => ['aspect-ratio']]);
+$fl = "<iframe src='https://flo.uri.sh/visualisation/123456/embed' title='Interactive or visual content' class='flourish-embed-iframe' frameborder='0' scrolling='no' style='width:100%;height:600px;' sandbox='allow-same-origin allow-scripts'></iframe>";
+$check('Flourish iframe → метка, высота из стиля, ссылка на страницу', $c->clean($fl), ['has' => ['tm-embed', 'flo.uri.sh/visualisation/123456/embed', 'data-embed-h="600"', 'public.flourish.studio/visualisation/123456/']]);
+$check('Flourish без iframe (блок и сценарий) → метка', $c->clean('<div class="flourish-embed flourish-chart" data-src="visualisation/654321"><script src="https://public.flourish.studio/resources/embed.js"></script></div>'),
+    ['has' => ['tm-embed', 'https://flo.uri.sh/visualisation/654321/embed', 'data-embed-h="600"'], 'not' => ['<script', 'flourish-chart']]);
+$check('Infogram без iframe → метка', $c->clean('<div class="infogram-embed" data-id="abc-123" data-type="interactive" data-title="Курс"></div><script>!function(e,i,n,s){}(document,0,"infogram-async","https://e.infogram.com/js/dist/embed-loader-min.js");</script>'),
+    ['has' => ['tm-embed', 'https://e.infogram.com/abc-123?src=embed', 'infogram.com/abc-123'], 'not' => ['<script', 'infogram-embed']]);
+$check('Infogram iframe с размерами → обычная вставка', $c->clean('<iframe src="https://e.infogram.com/abc-123?src=embed" title="Курс" width="550" height="900" scrolling="no" frameborder="0"></iframe>'),
+    ['has' => ['data-embed-w="550"', 'data-embed-h="900"']]);
+$once = $c->clean($dw);
+$check('диаграмма: повторная очистка ничего не меняет', $c->clean($once) === $once ? 'ok' : $c->clean($once), ['has' => ['ok']]);
+
 echo "\n" . ($fail ? "СБОЕВ: {$fail}\n" : "все проверки прошли\n");
 exit($fail ? 1 : 0);

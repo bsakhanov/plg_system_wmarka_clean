@@ -37,7 +37,7 @@ final class WordClean
     public const DEFAULT_KEEP = '© ® ™';
 
     /** Хосты, вставки с которых разрешены (iframe и метки tm-embed): суффикс домена, через пробел */
-    public const DEFAULT_EMBED_HOSTS = 'youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app';
+    public const DEFAULT_EMBED_HOSTS = 'youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app datawrapper.dwcdn.net flo.uri.sh public.flourish.studio e.infogram.com';
 
     /** Классы вставок соцсетей: blockquote с такими классами остаётся вместе с data-* и cite (картинку из него рисует скрипт соцсети, его подключает шаблон) */
     public const SOCIAL_CLASSES = ['twitter-tweet', 'instagram-media', 'tiktok-embed', 'text-post-media', 'bluesky-embed'];
@@ -475,6 +475,15 @@ final class WordClean
             return 'https://t.me/' . $m[1];
         }
 
+        // диаграммы: страница диаграммы, а не адрес встраивания
+        if (preg_match('~^https://flo\.uri\.sh/((?:visualisation|story)/\d+)~i', $src, $m)) {
+            return 'https://public.flourish.studio/' . $m[1] . '/';
+        }
+
+        if (preg_match('~^https://e\.infogram\.com/([\w-]+)~i', $src, $m)) {
+            return 'https://infogram.com/' . $m[1];
+        }
+
         return $src;
     }
 
@@ -507,7 +516,8 @@ final class WordClean
      */
     private function embedsRaw(string $html): string
     {
-        if (stripos($html, '<iframe') === false && stripos($html, 'telegram-post') === false) {
+        if (stripos($html, '<iframe') === false && stripos($html, 'telegram-post') === false
+            && stripos($html, 'flourish-embed') === false && stripos($html, 'infogram-embed') === false) {
             return $html;
         }
 
@@ -529,7 +539,22 @@ final class WordClean
                 return '';
             }
 
-            return $make($src, (int) $attr($m[1], 'width'), (int) $attr($m[1], 'height'));
+            // диаграммы задают высоту в стиле («height:600px»), ширину — «100%»: такая вставка тянется на всю ширину текста
+            $h = (int) $attr($m[1], 'height') ?: (preg_match('~height\s*:\s*(\d+)px~i', $attr($m[1], 'style'), $hs) ? (int) $hs[1] : 0);
+
+            return $make($src, (int) $attr($m[1], 'width'), $h);
+        }, $html) ?? $html;
+
+        // Flourish и Infogram без iframe: блок с данными и сценарий площадки → метка с адресом встраивания
+        $html = preg_replace_callback('~<div\b([^>]*\bclass\s*=\s*["\'][^"\']*\bflourish-embed\b[^>]*)>.*?</div>~is', function (array $m) use ($attr, $make): string {
+            $id = $attr($m[1], 'data-src');
+
+            return preg_match('~^(?:visualisation|story)/\d+$~', $id) ? $make('https://flo.uri.sh/' . $id . '/embed', 0, (int) $attr($m[1], 'data-height') ?: 600) : '';
+        }, $html) ?? $html;
+        $html = preg_replace_callback('~<div\b([^>]*\bclass\s*=\s*["\'][^"\']*\binfogram-embed\b[^>]*)>.*?</div>~is', function (array $m) use ($attr, $make): string {
+            $id = $attr($m[1], 'data-id');
+
+            return preg_match('~^[\w-]+$~', $id) ? $make('https://e.infogram.com/' . $id . '?src=embed', 0, 600) : '';
         }, $html) ?? $html;
 
         // <script async src="…telegram-widget.js" data-telegram-post="канал/123" data-width="100%"></script>

@@ -22,6 +22,10 @@ class PlgSystemWmarka_cleanInstallerScript
     private const OLD_EXTRA = '№ ≈ ↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
     private const NEW_EXTRA = '↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
 
+    /** Площадки вставок по умолчанию до 1.2.0 и добавленные в 1.2.0 площадки диаграмм. */
+    private const OLD_HOSTS = 'youtube.com youtube-nocookie.com vimeo.com vk.com vkvideo.ru rutube.ru ok.ru dailymotion.com tiktok.com instagram.com facebook.com t.me twitter.com x.com syndication.twitter.com open.spotify.com soundcloud.com music.yandex.ru threads.net threads.com bsky.app embed.bsky.app';
+    private const CHART_HOSTS = 'datawrapper.dwcdn.net flo.uri.sh public.flourish.studio e.infogram.com';
+
     private const KEYS = ['merge_readmore', 'enabled_save', 'enabled_paste', 'strip_emoji', 'extra_symbols', 'strip_hashtags',
         'link_target', 'embed_hosts', 'keep_classes', 'drop_empty_p', 'table_classes'];
 
@@ -64,8 +68,28 @@ class PlgSystemWmarka_cleanInstallerScript
             // The 1.0.0 default saved on install moves to the new default; a list someone changed, or one carried over from tengeclean, stays.
             $params = json_decode((string) $self->params, true) ?: [];
 
+            $changed = false;
+
             if (($params['extra_symbols'] ?? null) === self::OLD_EXTRA && !$find('tengeclean')) {
                 $params['extra_symbols'] = self::NEW_EXTRA;
+                $changed = true;
+            }
+
+            // площадки диаграмм: список, в котором есть все прежние площадки по умолчанию, дополняется ими;
+            // список, из которого площадки убирали, — чья-то настройка, он остаётся как был
+            $hosts = preg_split('~[\s,]+~', strtolower(trim((string) ($params['embed_hosts'] ?? '')))) ?: [];
+            $hosts = array_values(array_filter($hosts));
+
+            if ($hosts && !array_diff(explode(' ', self::OLD_HOSTS), $hosts)) {
+                $add = array_diff(explode(' ', self::CHART_HOSTS), $hosts);
+
+                if ($add) {
+                    $params['embed_hosts'] = implode(' ', array_merge($hosts, $add));
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
                 $json = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 $db->setQuery($db->createQuery()->update($db->quoteName('#__extensions'))
                     ->set($db->quoteName('params') . ' = ' . $db->quote($json))
