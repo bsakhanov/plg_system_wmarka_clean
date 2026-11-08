@@ -3,17 +3,17 @@
 <updates>
     <update>
         <name>Webmarka Clean</name>
-        <description>Webmarka Clean 1.1.0</description>
+        <description>Webmarka Clean 1.2.0</description>
         <element>wmarka_clean</element>
         <type>plugin</type>
         <folder>system</folder>
         <client>site</client>
-        <version>1.1.0</version>
-        <infourl title="Webmarka Clean 1.1.0">https://github.com/bsakhanov/plg_system_wmarka_clean/releases/tag/v1.1.0</infourl>
+        <version>1.2.0</version>
+        <infourl title="Webmarka Clean 1.2.0">https://github.com/bsakhanov/plg_system_wmarka_clean/releases/tag/v1.2.0</infourl>
         <downloads>
-            <downloadurl type="full" format="zip">https://github.com/bsakhanov/plg_system_wmarka_clean/releases/download/v1.1.0/plg_system_wmarka_clean_v1.1.0.zip</downloadurl>
+            <downloadurl type="full" format="zip">https://github.com/bsakhanov/plg_system_wmarka_clean/releases/download/v1.2.0/plg_system_wmarka_clean_v1.2.0.zip</downloadurl>
         </downloads>
-        <sha256>7e7d42a8c5d624432ad5f4fd234b8986641d521d89c4ded80684b086bc789cb5</sha256>
+        <sha256>08d9354c878cf505d7f8aaddc996ed5d1e6e35c4e75131e4611606d75fd79c75</sha256>
         <changelogurl>https://raw.githubusercontent.com/bsakhanov/plg_system_wmarka_clean/main/changelog.xml</changelogurl>
         <maintainer>Beibit Sakhanov</maintainer>
         <maintainerurl>https://webmarka.kz</maintainerurl>
