@@ -23,6 +23,10 @@
   const SOCIAL = ['twitter-tweet', 'instagram-media', 'tiktok-embed', 'text-post-media', 'bluesky-embed'];
   // снимок, видео и документ из Wmarka Media: figure.wm-figure…, подпись span.wm-figure__credit, адрес ролика data-wm-video, a.wm-doc
   const WMARKA = /^wm-(?:figure|doc)(?:--[a-z0-9]+|__[a-z]+)?$/;
+  // цвет текста и фон, выбранные в редакторе: span со style из color и background-color (как WordClean::COLOR_VALUE). Из Word и Google Docs цвета при вставке
+  // снимаются, как прежде; остаются они при вставке изнутри самого редактора (копировать и вставить цветной текст)
+  const keepColors = options.keepColors === true;
+  const COLOR_VALUE = /^(?:#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(?:rgb|hsl)a?\(\s*[0-9.]+(?:deg|%)?\s*[, ]\s*[0-9.]+%?\s*[, ]\s*[0-9.]+%?\s*(?:[,/]\s*[0-9.]+%?\s*)?\))$/;
   const extraSymbols = typeof options.extra === 'string' ? options.extra : '↑ ↓ ← → ↔ ↕ ↗ ↘ ↖ ↙ ★ ☆ ✓ ✗ ✘';
   /** Знаки, которые остаются (как WordClean::protect): на время очистки — символ частной области Unicode, потом обратно; «©️» → «©» */
   const KEEP = (typeof options.keepSymbols === 'string' ? options.keepSymbols : '© ® ™')
@@ -731,8 +735,23 @@
 
   /* ---------------------------------------------------------------- очистка фрагмента */
 
-  /** Очистка фрагмента, вставляемого в редактор. root — узел с вставляемым содержимым. */
-  function cleanNode(root) {
+  /** Из style (в нижнем регистре) — только color и background-color с допустимыми значениями: «color:#e03e2d;background-color:#fff3cd»; иначе пустая строка */
+  function colorStyle(style) {
+    const got = {};
+    const re = /(?:^|;)\s*(color|background-color)\s*:\s*([^;]*)/g;
+    let m;
+    while ((m = re.exec(style)) !== null) {
+      const value = m[2].trim().replace(/\s*!important\s*$/, '').trim().replace(/\s+/g, ' ');
+      if (COLOR_VALUE.test(value)) {
+        got[m[1]] = value;
+      }
+    }
+    return ['color', 'background-color'].filter((p) => got[p]).map((p) => p + ':' + got[p]).join(';');
+  }
+
+  /** Очистка фрагмента, вставляемого в редактор. root — узел с вставляемым содержимым; colors — оставить цвет текста и фон (вставка изнутри редактора). */
+  function cleanNode(root, colors) {
+    const colorsNow = keepColors && colors === true;
     // комментарии (условные блоки Word) и служебные элементы
     const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
     const comments = [];
@@ -799,6 +818,7 @@
       if ((tag === 'SPAN' || tag === 'FONT') && style) {
         semantic(el, style);
       }
+      const colored = colorsNow && tag === 'SPAN' && style ? colorStyle(style) : '';
 
       // атрибуты
       if (tag === 'A' && el.hasAttribute('name') && !(el.getAttribute('id') || '').trim()) {
@@ -843,7 +863,12 @@
         el = rename(el, tag === 'B' ? 'strong' : 'em');
         tag = el.nodeName;
       }
-      if (UNWRAP.has(tag) && !(tag === 'SPAN' && el.classList.contains('wm-figure__credit'))) {
+      const credit = tag === 'SPAN' && el.classList.contains('wm-figure__credit');
+      if (colored && !credit) {
+        el.childNodes.length ? el.setAttribute('style', colored) : el.remove();
+        return;
+      }
+      if (UNWRAP.has(tag) && !credit) {
         unwrap(el);
         return;
       }
@@ -951,7 +976,10 @@
       return;
     }
     editor.__wmarkaClean = true;
+    // вставка изнутри редактора (копирование цветного текста в нём же): TinyMCE отмечает её признаком internal; цвета в ней остаются
+    let internalPaste = false;
     editor.on('PastePreProcess', (e) => {
+      internalPaste = e.internal === true;
       const code = embedCode(e.content);
       e.content = convertStyles(convertWordLists(convertEmbeds(code !== null ? code : e.content)));
     });
@@ -961,7 +989,10 @@
         e.content = convertEmbeds(e.content);
       }
     });
-    editor.on('PastePostProcess', (e) => cleanNode(e.node));
+    editor.on('PastePostProcess', (e) => {
+      cleanNode(e.node, internalPaste || e.internal === true);
+      internalPaste = false;
+    });
     editor.on('PreInit', () => tableClasses(editor));
     // «Показать блоки» включено с самого начала: структура текста (абзацы, списки, цитаты) видна сразу
     const blocksOn = () => {

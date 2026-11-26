@@ -88,5 +88,26 @@ $check('Infogram iframe с размерами → обычная вставка'
 $once = $c->clean($dw);
 $check('диаграмма: повторная очистка ничего не меняет', $c->clean($once) === $once ? 'ok' : $c->clean($once), ['has' => ['ok']]);
 
+// 1.3.0: цвет текста и фон, выбранные в редакторе
+$cc = new WordClean(['uk-table*', 'uk-overflow-auto'], true, true, WordClean::DEFAULT_EXTRA, true, ['linkMode' => 'external', 'siteHost' => 'example.kz', 'keepColors' => true]);
+$check('цвета: TinyMCE — цвет и фон остаются, запись приводится к одному виду', $cc->clean('<p>Обычный <span style="color: #E03E2D; background-color: #FFF3CD;">выделенный</span> текст</p>'),
+    ['has' => ['<span style="color:#e03e2d;background-color:#fff3cd">выделенный</span>'], 'count' => ['<span', 1]]);
+$check('цвета: только цвет текста, rgb()', $cc->clean('<p><span style="color: rgb(224, 62, 45);">красный</span></p>'), ['has' => ['<span style="color:rgb(224, 62, 45)">красный</span>']]);
+$check('цвета: только фон', $cc->clean('<p><span style="background-color: #fbeeb8;">маркер</span></p>'), ['has' => ['<span style="background-color:#fbeeb8">маркер</span>']]);
+$check('цвета: из Word остаются только цвета, шрифт и mso-* уходят', $cc->clean('<p class="MsoNormal"><span style="font-size:14pt;font-family:Arial;color:#c00000;mso-ansi-language:EN-US;mso-bidi-font-weight:bold">Важно</span></p>'),
+    ['has' => ['<span style="color:#c00000">Важно</span>'], 'not' => ['font-size', 'font-family', 'mso-', 'Mso']]);
+$check('цвета: windowtext, имя цвета, background-shorthand — span разворачивается', $cc->clean('<p><span style="color:windowtext;background:yellow">а</span><span style="color:red">б</span></p>'), ['has' => ['аб'], 'not' => ['<span', 'style=']]);
+$check('цвета: url(), expression(), var() в значении не проходят', $cc->clean('<p><span style="color:expression(alert(1))">а</span><span style="background-color:url(javascript:alert(1))">б</span><span style="color:var(--x)">в</span></p>'), ['has' => ['абв'], 'not' => ['<span', 'style=', 'javascript', 'expression']]);
+$check('цвета: border-color и color-adjust — не цвет текста', $cc->clean('<p><span style="border-color:#ff0000;color-adjust:exact">а</span></p>'), ['not' => ['<span', 'style=']]);
+$check('цвета: !important снимается', $cc->clean('<p><span style="color:#c00000 !important">а</span></p>'), ['has' => ['<span style="color:#c00000">а</span>']]);
+$check('цвета: жирный из style и цвет вместе', $cc->clean('<p><span style="font-weight:700;color:#c00000">Итог</span></p>'), ['has' => ['<span style="color:#c00000"><strong>Итог</strong></span>']]);
+$check('цвета: класс на span снимается, стиль остаётся', $cc->clean('<p><span class="MsoFoo x" style="color:#c00000">а</span></p>'), ['has' => ['<span style="color:#c00000">а</span>'], 'not' => ['class=', 'Mso']]);
+$check('цвета: пустой span с цветом не остаётся', $cc->clean('<p>а<span style="color:#c00000"></span>б</p>'), ['has' => ['аб'], 'not' => ['<span']]);
+$check('цвета: у p и других тегов style по-прежнему снимается', $cc->clean('<p style="color:#c00000">а</p><h2 style="background-color:#fff">б</h2>'), ['not' => ['style=']]);
+$check('цвета: подпись wm-figure__credit остаётся как была', $cc->clean('<figure class="wm-figure"><img src="a.webp" alt="х"><figcaption>П. <span class="wm-figure__credit" style="color:#c00000">Фото: х</span></figcaption></figure>'), ['has' => ['<span class="wm-figure__credit">Фото: х</span>'], 'not' => ['style=']]);
+$check('цвета: настройка выключена — span разворачивается, как прежде', $c->clean('<p><span style="color:#c00000;background-color:#fff3cd">а</span></p>'), ['has' => ['<p>а</p>'], 'not' => ['<span', 'style=']]);
+$col = $cc->clean('<p>а <span style="color: #E03E2D; background-color: #FFF3CD;">б</span> <span style="font-size:12pt;color:rgb(1, 2, 3)"><em>в</em></span></p>');
+$check('цвета: повторная очистка ничего не меняет', $cc->clean($col) === $col ? 'ok' : $cc->clean($col), ['has' => ['ok']]);
+
 echo "\n" . ($fail ? "СБОЕВ: {$fail}\n" : "все проверки прошли\n");
 exit($fail ? 1 : 0);

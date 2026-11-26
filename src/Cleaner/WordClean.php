@@ -49,6 +49,12 @@ final class WordClean
      */
     public const WMARKA_CLASS = '~^wm-(?:figure|doc)(?:--[a-z0-9]+|__[a-z]+)?$~';
 
+    /**
+     * Значение цвета, которое может остаться в style у span (настройка «Цвет текста и фон»): #rgb, #rgba, #rrggbb, #rrggbbaa, rgb(), rgba(), hsl(), hsla()
+     * с числами. Имена цветов (в том числе windowtext и black из Word), var(), url(), expression() и всё прочее не проходит.
+     */
+    public const COLOR_VALUE = '~^(?:#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(?:rgb|hsl)a?\(\s*[0-9.]+(?:deg|%)?\s*[, ]\s*[0-9.]+%?\s*[, ]\s*[0-9.]+%?\s*(?:[,/]\s*[0-9.]+%?\s*)?\))$~';
+
     /** Знаки-маркеры списков, кроме эмодзи (они маркеры тоже) и тире с пробелом: набранные вручную «списки» становятся ul/li */
     private const LIST_CHARS = '•●◉⬤◦‣○◌▪▫■□·∙▸▹►';
 
@@ -110,7 +116,8 @@ final class WordClean
         array $options = []
     ) {
         // linkMode: all — все ссылки, кроме «#якорь», mailto и tel, открываются в новой вкладке; external — только внешние; off — не трогать
-        $this->opt = $options + ['linkMode' => 'all', 'siteHost' => '', 'embedHosts' => self::DEFAULT_EMBED_HOSTS, 'keepSymbols' => self::DEFAULT_KEEP];
+        // keepColors: true — цвет текста и фон (color, background-color с безопасными значениями) переживают очистку: span остаётся с одним style
+        $this->opt = $options + ['linkMode' => 'all', 'siteHost' => '', 'embedHosts' => self::DEFAULT_EMBED_HOSTS, 'keepSymbols' => self::DEFAULT_KEEP, 'keepColors' => false];
         $this->keepSymbols = (string) $this->opt['keepSymbols'];
         $this->keep  = array_map(
             static fn (string $g): string => '~^' . str_replace('\*', '[a-z0-9_-]*', preg_quote(trim($g), '~')) . '$~i',
@@ -914,6 +921,9 @@ final class WordClean
             $this->semantic($el, $style);
         }
 
+        // цвет текста и фон, выбранные в редакторе (TinyMCE: <span style="color:#e03e2d;background-color:#fff3cd">): из style остаются только они
+        $colors = $tag === 'span' && $this->opt['keepColors'] && $style !== '' ? $this->colorStyle($style) : '';
+
         $this->attributes($el, $tag, $targets);
 
         // b → strong, i → em: единая разметка
@@ -923,7 +933,19 @@ final class WordClean
         }
 
         // подпись «Фото: …» / «Видео: …» снимка из Wmarka Media — span с классом, его не разворачивать
-        if (\in_array($tag, self::UNWRAP, true) && !($tag === 'span' && preg_match('~(?:^|\s)wm-figure__credit(?:\s|$)~', (string) $el->getAttribute('class')))) {
+        $credit = $tag === 'span' && preg_match('~(?:^|\s)wm-figure__credit(?:\s|$)~', (string) $el->getAttribute('class')) === 1;
+
+        if ($colors !== '' && !$credit) {
+            if (!$el->hasChildNodes()) {
+                $el->parentNode->removeChild($el);
+            } else {
+                $el->setAttribute('style', $colors);
+            }
+
+            return;
+        }
+
+        if (\in_array($tag, self::UNWRAP, true) && !$credit) {
             $this->unwrap($el);
 
             return;
@@ -965,6 +987,38 @@ final class WordClean
         if (\in_array($tag, ['strong', 'em', 'sup', 'sub', 's', 'strike', 'del', 'ins', 'a'], true) && !$el->hasChildNodes() && !$el->hasAttribute('id')) {
             $el->parentNode->removeChild($el);
         }
+    }
+
+    /**
+     * Из style (уже в нижнем регистре) — только color и background-color с допустимыми значениями (COLOR_VALUE), в виде «color:#e03e2d;background-color:#fff3cd».
+     * Остальное (шрифты, поля, mso-*, background-shorthand, border-color …) отбрасывается; нет допустимого цвета — пустая строка.
+     */
+    private function colorStyle(string $style): string
+    {
+        if (!preg_match_all('~(?:^|;)\s*(color|background-color)\s*:\s*([^;]*)~', $style, $found, PREG_SET_ORDER)) {
+            return '';
+        }
+
+        $got = [];
+
+        foreach ($found as [, $prop, $value]) {
+            $value = trim((string) preg_replace('~\s*!important\s*$~', '', trim($value)));
+            $value = (string) preg_replace('~\s+~', ' ', $value);
+
+            if (preg_match(self::COLOR_VALUE, $value) === 1) {
+                $got[$prop] = $value;
+            }
+        }
+
+        $out = [];
+
+        foreach (['color', 'background-color'] as $prop) {
+            if (isset($got[$prop])) {
+                $out[] = $prop . ':' . $got[$prop];
+            }
+        }
+
+        return implode(';', $out);
     }
 
     /** span/font со style → вложенные strong, em, sup, sub (содержимое переносится внутрь; сам span снимется позже) */

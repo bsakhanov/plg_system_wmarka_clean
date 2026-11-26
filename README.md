@@ -29,7 +29,7 @@ In the editor right after pasting — exactly what is saved:
 
 ## What it does
 
-- **Office clutter.** Word comments and conditional blocks, tags such as `<o:p>`, `span` and `font` (content kept; bold and italic from styles become `strong` and `em`), every `style`, `lang`, `align`, service `id` and every class except the allowed ones. Word lists become real `ul` and `ol`.
+- **Office clutter.** Word comments and conditional blocks, tags such as `<o:p>`, `span` and `font` (content kept; bold and italic from styles become `strong` and `em`), every `style` (except text colour and background, see the «Text colour and background» setting), `lang`, `align`, service `id` and every class except the allowed ones. Word lists become real `ul` and `ol`.
 - **Paragraphs.** Lines separated by `<br>` become paragraphs; empty paragraphs and extra spaces go.
 - **Emoji, symbols and hashtags** — from the text, title and meta description. Currency signs (₸ ₽ $ € £ ¥ and others), №, §, the degree sign, ± × ≈ ‰, fractions, © ® ™, the minus before a number, list markers and a single footnote «*» stay. Each site extends the «Symbols to keep» list itself — for example ☎ and ✉ for contacts or ★ for ratings.
 - **Links.** Anchors and footnotes are kept; external links can open in a new tab.
@@ -65,6 +65,7 @@ System → Plugins → System — Webmarka Clean.
 - **Hosts allowed for embeds** — Video, social and chart embeds (YouTube, TikTok, Instagram, Facebook, Telegram, X, Threads, Datawrapper, Flourish, Infogram and others): an iframe of these hosts (space-separated, subdomains included) is stored in the text as a safe marker that Joomla text filters let through, and the plugin builds the real embed from it on the site. Iframes of other hosts are removed.
 - **Build embeds on the site** — On the site the plugin turns embed markers in article text into real embeds — lazy-loaded iframes of allowed hosts — and loads the platform script for social quotes. Turn it off if your template builds embeds itself.
 - **Classes to keep** — One pattern per line, «*» matches any ending. All other classes (MsoNormal, MsoTableGrid included) are removed. By default the table classes of UIkit 3; for a Bootstrap template add table*.
+- **Text colour and background** — The text colour and background chosen in the editor survive saving: a `span` keeps a single `style` made of `color` and `background-color` (`#e03e2d`, `rgb(224, 62, 45)`, `hsl(…)`). Fonts, sizes and the rest of the style, colour names (`windowtext`, `black`) and anything unusual in the value are still removed. Colours pasted from Word and Google Docs are removed as before; they stay when coloured text is copied inside the editor. On by default. Colours are chosen with the standard buttons of the TinyMCE toolbar.
 - **Remove empty paragraphs** — Paragraphs without text, image, link or table (this is how Word passes empty lines).
 - **Table styles (the «Class» list)** — One option per line: «Title|classes». Shown in the table properties dialog of the editor.
 - **Without the «Read more» divider** — On save the intro and full text are joined into one field and the `<hr id="system-readmore">` line is removed; the teaser is cut by length settings. Off by default.

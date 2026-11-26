@@ -171,6 +171,7 @@ final class Clean extends CMSPlugin implements SubscriberInterface
             'siteHost'   => (string) Uri::getInstance()->getHost(),
             'embedHosts' => trim((string) $this->params->get('embed_hosts', '')) ?: WordClean::DEFAULT_EMBED_HOSTS,
             'keepSymbols' => $this->text('keep_symbols', WordClean::DEFAULT_KEEP),
+            'keepColors' => (int) $this->params->get('keep_colors', 1) === 1,
         ];
     }
 
